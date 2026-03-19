@@ -67,7 +67,7 @@ export default function HeroSection() {
           .hero-grid {
             grid-template-columns: 1fr;
             padding: 110px 24px 60px;
-            gap: 40px;
+            gap: 90px;
             text-align: center;
           }
         }
@@ -127,7 +127,7 @@ export default function HeroSection() {
           font-family: 'Syne', sans-serif;
           font-weight: 800;
           font-size: clamp(2.2rem, 4.5vw, 3.6rem);
-          line-height: 1.08;
+          line-height: 1.20;
           letter-spacing: -0.03em;
           color: var(--black);
           animation: fadeSlideDown 0.55s 0.1s ease both;
@@ -143,7 +143,8 @@ export default function HeroSection() {
           max-width: 480px;
           animation: fadeSlideDown 0.55s 0.2s ease both;
         }
-        @media (max-width: 860px) { .hero-sub { margin: 0 auto; } }
+        @media (max-width: 860px) { .hero-sub { margin: 0 auto; } 
+         .hero-h1 {font-size: 2rem}}
 
         /* CTA row */
         .hero-ctas {
