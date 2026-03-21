@@ -102,11 +102,8 @@ export default function Demosection() {
           <aside className="hidden h-full lg:flex lg:flex-col lg:sticky lg:top-24 lg:justify-evenly  rounded-2xl border border-gray-100 bg-white shadow-sm overflow-hidden ">
 
             {/* Logo */}
-            <div className="flex items-center gap-3 border-b border-gray-100 px-4 py-4">
-              <Image src={Logo} alt="ExpenseHub" width={36} height={36} className="rounded-xl" />
-              <span className="text-base font-extrabold tracking-tight text-gray-900">
-                Expense<span className="text-green-500">Hub</span>
-              </span>
+            <div className="flex items-center gap-3 border-b border-gray-100 px-4 py-4 justify-center">
+              <Image src={Logo} alt="ExpenseHub" width={120} height={56} className="rounded-xl" />
             </div>
 
             {/* Nav items */}
@@ -115,7 +112,7 @@ export default function Demosection() {
                 <button
                   key={key}
                   onClick={() => setSelected(key)}
-                  className={`group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-all duration-200
+                  className={`group flex w-full items-center gap-3 cursor-pointer rounded-xl px-3 py-2.5 text-left transition-all duration-200
                     ${selected === key
                       ? "bg-green-500 shadow-md shadow-green-200"
                       : "hover:bg-green-50"
@@ -136,7 +133,7 @@ export default function Demosection() {
 
             {/* ── User profile + logout ── */}
             <div className="border-t border-gray-100 p-3">
-              <div className="flex items-center gap-3 rounded-xl px-3 py-3 hover:bg-gray-50 transition-colors">
+              <div className="flex items-center cursor-pointer gap-3 rounded-xl px-3 py-3 hover:bg-gray-50 transition-colors">
                 {/* Avatar */}
                 <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-green-500 text-sm font-bold text-white shadow-sm">
                   RD
