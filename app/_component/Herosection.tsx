@@ -161,7 +161,7 @@ export default function HeroSection() {
           font-weight: 700;
           font-size: 0.95rem;
           color: #fff;
-          background: linear-gradient(135deg, var(--blue) 0%, var(--green) 100%);
+          background: #00c853;
           padding: 0.75rem 1.75rem;
           border-radius: 999px;
           text-decoration: none;

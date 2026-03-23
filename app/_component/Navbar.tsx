@@ -116,7 +116,7 @@ export default function Navbar() {
           font-weight: 700;
           font-size: 1rem;
           color: #fff;
-          background: linear-gradient(135deg, var(--eh-blue) 0%, var(--eh-green) 100%);
+          background: #00c853;
           padding: 0.52rem 1.4rem;
           border-radius: 999px;
           text-decoration: none;
@@ -254,7 +254,7 @@ export default function Navbar() {
           text-align: center;
           padding: 0.72rem;
           border-radius: 999px;
-          background: linear-gradient(135deg, var(--eh-blue) 0%, var(--eh-green) 100%);
+          background: #00c853;
           text-decoration: none;
           box-shadow: 0 2px 14px rgba(37,99,199,0.25);
           transition: filter 0.2s;

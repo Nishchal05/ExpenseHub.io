@@ -3,6 +3,7 @@ import Navbar from "./_component/Navbar";
 import Herosection from "./_component/Herosection";
 import Demosection from "./_component/Demosection";
 import Featured from "./_component/Featured";
+import Discovered from "./_component/discovered";
 
 export default function Home() {
   return (
@@ -10,6 +11,7 @@ export default function Home() {
       <Herosection/>
       <Demosection/>
       <Featured/>
+      <Discovered/>
     </div>
   );
 }
