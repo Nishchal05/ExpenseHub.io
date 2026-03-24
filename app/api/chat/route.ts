@@ -1,37 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 
-type MessageType =
-  | "text"
-  | "button_reply"
-  | "list_reply"
-  | "image"
-  | "document";
-
 interface ChatRequestBody {
-  sessionId?: string;
   userId: string;
   userName?: string;
+  messageType: "text";
+  text: string;
   messageId?: string;
   timestamp?: string;
-  messageType: MessageType;
-
-  // text
-  text?: string;
-
-  // button
-  buttonId?: string;
-  buttonTitle?: string;
-
-  // list
-  listId?: string;
-  listTitle?: string;
-  description?: string;
-
-  // file/image/document
-  fileUrl?: string;
-  mimeType?: string;
-  fileName?: string;
-  caption?: string;
 }
 
 interface WhatsAppLikePayload {
@@ -46,9 +21,16 @@ interface WhatsAppLikePayload {
     };
     wa_id: string;
   }>;
-  messages: Array<Record<string, unknown>>;
+  messages: Array<{
+    from: string;
+    id: string;
+    timestamp: string;
+    type: "text";
+    text: {
+      body: string;
+    };
+  }>;
   field: "messages";
-  sessionId?: string;
 }
 
 const N8N_WEBHOOK_URL = process.env.N8N_WEBHOOK_URL;
@@ -58,93 +40,8 @@ function buildWhatsAppLikePayload(body: ChatRequestBody): WhatsAppLikePayload {
   const messageId = body.messageId || `msg_${Date.now()}`;
   const userName = body.userName || "Unknown User";
 
-  const baseMessage = {
-    from: body.userId,
-    id: messageId,
-    timestamp,
-  };
-
-  let message: Record<string, unknown>;
-
-  switch (body.messageType) {
-    case "text":
-      message = {
-        ...baseMessage,
-        type: "text",
-        text: {
-          body: body.text || "",
-        },
-      };
-      break;
-
-    case "button_reply":
-      message = {
-        ...baseMessage,
-        type: "interactive",
-        interactive: {
-          type: "button_reply",
-          button_reply: {
-            id: body.buttonId || "",
-            title: body.buttonTitle || "",
-          },
-        },
-      };
-      break;
-
-    case "list_reply":
-      message = {
-        ...baseMessage,
-        type: "interactive",
-        interactive: {
-          type: "list_reply",
-          list_reply: {
-            id: body.listId || "",
-            title: body.listTitle || "",
-            description: body.description || "",
-          },
-        },
-      };
-      break;
-
-    case "image":
-      message = {
-        ...baseMessage,
-        type: "image",
-        image: {
-          mime_type: body.mimeType || "application/octet-stream",
-          id: `file_${Date.now()}`,
-          url: body.fileUrl || "",
-          caption: body.caption || "",
-        },
-      };
-      break;
-
-    case "document":
-      message = {
-        ...baseMessage,
-        type: "document",
-        document: {
-          mime_type: body.mimeType || "application/octet-stream",
-          id: `file_${Date.now()}`,
-          url: body.fileUrl || "",
-          filename: body.fileName || "document",
-          caption: body.caption || "",
-        },
-      };
-      break;
-
-    default:
-      message = {
-        ...baseMessage,
-        type: "text",
-        text: {
-          body: body.text || "",
-        },
-      };
-  }
-
   return {
-    messaging_product: "custom_chat",
+    messaging_product: "whatsapp",
     metadata: {
       display_phone_number: "custom_chat_ui",
       phone_number_id: "custom_chat_ui",
@@ -157,32 +54,26 @@ function buildWhatsAppLikePayload(body: ChatRequestBody): WhatsAppLikePayload {
         wa_id: body.userId,
       },
     ],
-    messages: [message],
+    messages: [
+      {
+        from: body.userId,
+        id: messageId,
+        timestamp,
+        type: "text",
+        text: {
+          body: body.text,
+        },
+      },
+    ],
     field: "messages",
-    sessionId: body.sessionId,
   };
 }
 
 function validateBody(body: Partial<ChatRequestBody>): string | null {
   if (!body.userId) return "userId is required";
   if (!body.messageType) return "messageType is required";
-
-  switch (body.messageType) {
-    case "text":
-      if (!body.text) return "text is required for messageType=text";
-      break;
-    case "button_reply":
-      if (!body.buttonId) return "buttonId is required for button_reply";
-      break;
-    case "list_reply":
-      if (!body.listId) return "listId is required for list_reply";
-      break;
-    case "image":
-    case "document":
-      if (!body.fileUrl) return "fileUrl is required for file/image/document";
-      break;
-  }
-
+  if (body.messageType !== "text") return "Only messageType=text is supported";
+  if (!body.text) return "text is required for messageType=text";
   return null;
 }
 
