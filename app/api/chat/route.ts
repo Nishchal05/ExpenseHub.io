@@ -23,6 +23,13 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
+    }
+    else if(body.messageType=="action"){
+      if (!body.userId || !body.action) {
+      return NextResponse.json(
+        { error: "userId and action are required" },
+        { status: 400 })
+      }
     }else{
       if (!body.userId || !body.data) {
         return NextResponse.json(
@@ -54,7 +61,7 @@ export async function POST(req: NextRequest) {
           type: body.messageType,
           mime_type: body.mime_type,
           text: {
-            body: body.text || body.data,
+            body: body.text || body.data || body.action,
           },
         },
       ],
