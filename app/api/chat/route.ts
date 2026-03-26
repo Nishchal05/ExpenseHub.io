@@ -16,12 +16,20 @@ export async function POST(req: NextRequest) {
 
     const body = await req.json();
     console.log("Incoming body:", body);
-
-    if (!body.userId || !body.text) {
+    if(body.messageType=="text"){
+       if (!body.userId || !body.text) {
       return NextResponse.json(
         { error: "userId and text are required" },
         { status: 400 }
       );
+    }
+    }else{
+      if (!body.userId || !body.data) {
+        return NextResponse.json(
+          { error: "userId and text are required" },
+          { status: 400 }
+        );
+      }
     }
 
     const payload = {
@@ -46,7 +54,7 @@ export async function POST(req: NextRequest) {
           type: body.messageType,
           mime_type: body.mime_type,
           text: {
-            body: body.text,
+            body: body.text || body.data,
           },
         },
       ],
