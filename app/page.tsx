@@ -5,6 +5,7 @@ import Demosection from "./_component/Demosection";
 import Featured from "./_component/Featured";
 import Discovered from "./_component/discovered";
 import Service from "./_component/Service";
+import Productfeature from "./_component/Productfeature";
 
 export default function Home() {
   return (
@@ -14,6 +15,7 @@ export default function Home() {
       <Featured/>
       <Discovered/>
       <Service/>
+      <Productfeature/>
     </div>
   );
 }
