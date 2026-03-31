@@ -68,6 +68,7 @@ export async function GET(req: NextRequest) {
 
     const userId = searchParams.get('userId');
     const id = searchParams.get('id');
+    const latest = searchParams.get('latest');
 
     // ✅ Case 1: Get single session by ID
     if (id) {
@@ -85,7 +86,20 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ success: true, session });
     }
 
-    // ✅ Case 2: Get sessions by userId
+    // ✅ Case 2: Get ONLY latest session
+    if (userId && latest === 'true') {
+      const session = await prisma.expenseSession.findFirst({
+        where: { userId },
+        orderBy: [
+          { createdAt: 'desc' },
+          { id: 'desc' }, // 🔥 tie-breaker
+        ],
+      });
+
+      return NextResponse.json({ success: true, session });
+    }
+
+    // ✅ Case 3: Get all sessions of user
     if (userId) {
       const sessions = await prisma.expenseSession.findMany({
         where: { userId },
@@ -97,7 +111,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ success: true, sessions });
     }
 
-    // ✅ Case 3: Get all sessions (optional)
+    // ✅ Case 4: Get all sessions
     const sessions = await prisma.expenseSession.findMany({
       orderBy: {
         createdAt: 'desc',
