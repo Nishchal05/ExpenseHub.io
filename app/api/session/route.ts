@@ -1,56 +1,59 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
-
 // 🔹 CREATE SESSION (POST)
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
 
+    const rawPayload = body.rawPayload ?? {};
+
+    const fileType =
+      rawPayload.data?.startsWith('data:')
+        ? rawPayload.data.split(';')[0].replace('data:', '')
+        : rawPayload.dataType ?? null;
+
     const session = await prisma.expenseSession.create({
       data: {
         userId: body.userId,
-    
+
         sourceMessageId: body.sourceMessageId ?? null,
-    
-        fileType: body.data?.startsWith("data:")
-          ? body.data.split(";")[0].replace("data:", "")
-          : body.dataType ?? null,
-    
-        fileUrl: null, // later you can store uploaded file URL here
-    
+
+        fileType,
+        fileUrl: body.fileUrl ?? null,
+
         merchant: body.merchant ?? null,
         amount: body.amount ?? null,
-    
-        expenseDate: body.expenseDate,
-    
-        type: body.type
-          ? body.type.toLowerCase()
-          : null,
-    
+
+        expenseDate: body.expenseDate ? new Date(body.expenseDate) : null,
+
+        type: body.type ? String(body.type).toLowerCase() : null,
         category: body.category ?? null,
-    
-        project: null,
-        customer: null,
-        event: null,
-        note: null,
-    
-        extraFields: {},
-    
-        currentStep: "awaiting_category",
-        status: "queued",
-    
+
+        project: body.project ?? null,
+        customer: body.customer ?? null,
+        event: body.event ?? null,
+        note: body.note ?? null,
+
+        extraFields: body.extraFields ?? {},
+
+        currentStep: body.currentStep ?? 'awaiting_category',
+        status: body.status ?? 'queued',
+        isActive: body.isActive ?? true,
+
         rawPayload: {
-          userName: body.rawPayload.userName ?? null,
-          messageType: body.rawPayload.messageType ?? null,
-          dataType: body.rawPayload.dataType ?? null,
-          data: body.rawPayload.data ?? null, // optional (base64)
+          userName: rawPayload.userName ?? null,
+          messageType: rawPayload.messageType ?? null,
+          dataType: rawPayload.dataType ?? null,
+          // Avoid storing huge base64 unless absolutely needed
+          // data: rawPayload.data ?? null,
         },
       },
     });
+
     return NextResponse.json({ success: true, session });
   } catch (error) {
-    console.error(error);
+    console.error('Failed to create session:', error);
     return NextResponse.json(
       { success: false, error: 'Failed to create session' },
       { status: 500 }
@@ -58,20 +61,65 @@ export async function POST(req: NextRequest) {
   }
 }
 
+// 🔹 GET SESSION(S)
+export async function GET(req: NextRequest) {
+  try {
+    const { searchParams } = new URL(req.url);
 
-export async function GET(req: NextRequest) { 
-  try { const { searchParams } = new URL(req.url); 
-  const userId = searchParams.get('userId'); 
-  const id = searchParams.get('id'); // ✅ Case 1: Get single session by ID 
-  if (id) { 
-    const session = await prisma.expenseSession.findUnique({ where: { id: Number(id) }, }); 
-    if (!session) { 
-      return NextResponse.json( { success: false, error: 'Session not found' }, { status: 404 } ); } 
-    return NextResponse.json({ success: true, session }); } // ✅ Case 2: Get sessions by userId 
-    if (userId) { 
-      const sessions = await prisma.expenseSession.findMany({ where: { userId }, orderBy: { createdAt: 'desc', }, });
-       return NextResponse.json({ success: true, sessions }); } // ✅ Case 3: Get all sessions (optional) 
-       const sessions = await prisma.expenseSession.findMany({ orderBy: { createdAt: 'desc', }, }); 
-       return NextResponse.json({ success: true, sessions }); } 
-  catch (error) { console.error(error);
-     return NextResponse.json( { success: false, error: 'Failed to fetch sessions' }, { status: 500 } ); } }
+    const userId = searchParams.get('userId');
+    const id = searchParams.get('id');
+
+    // ✅ Case 1: Get single session by ID
+    if (id) {
+      const session = await prisma.expenseSession.findUnique({
+        where: { id: Number(id) },
+      });
+
+      if (!session) {
+        return NextResponse.json(
+          { success: false, error: 'Session not found' },
+          { status: 404 }
+        );
+      }
+
+      return NextResponse.json({ success: true, session });
+    }
+
+    // ✅ Case 2: Get ALL expense details for one user (latest -> oldest)
+    if (userId) {
+      const sessions = await prisma.expenseSession.findMany({
+        where: { userId },
+        orderBy: [
+          { createdAt: 'desc' },
+          { id: 'desc' },
+        ],
+      });
+
+      return NextResponse.json({
+        success: true,
+        count: sessions.length,
+        sessions,
+      });
+    }
+
+    // ✅ Case 3: Get all sessions (latest -> oldest)
+    const sessions = await prisma.expenseSession.findMany({
+      orderBy: [
+        { createdAt: 'desc' },
+        { id: 'desc' },
+      ],
+    });
+
+    return NextResponse.json({
+      success: true,
+      count: sessions.length,
+      sessions,
+    });
+  } catch (error) {
+    console.error('Failed to fetch sessions:', error);
+    return NextResponse.json(
+      { success: false, error: 'Failed to fetch sessions' },
+      { status: 500 }
+    );
+  }
+}
