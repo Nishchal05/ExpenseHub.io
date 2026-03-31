@@ -10,18 +10,46 @@ export async function POST(req: NextRequest) {
     const session = await prisma.expenseSession.create({
       data: {
         userId: body.userId,
+    
+        sourceMessageId: body.unique_id ?? null,
+    
+        fileType: body.data?.startsWith("data:")
+          ? body.data.split(";")[0].replace("data:", "")
+          : body.dataType ?? null,
+    
+        fileUrl: null, // later you can store uploaded file URL here
+    
         merchant: body.merchant ?? null,
         amount: body.amount ?? null,
-        expenseDate: body.expenseDate
-          ? new Date(body.expenseDate)
+    
+        expenseDate: body.date
+          ? new Date(body.date)
           : null,
-        type: body.type ?? null,
+    
+        type: body.type
+          ? body.type.toLowerCase()
+          : null,
+    
         category: body.category ?? null,
-        currentStep: 'awaiting_category',
-        status: 'queued',
+    
+        project: null,
+        customer: body.payingEntity ?? null,
+        event: null,
+        note: null,
+    
+        extraFields: {},
+    
+        currentStep: "awaiting_category",
+        status: "queued",
+    
+        rawPayload: {
+          userName: body.userName ?? null,
+          messageType: body.messageType ?? null,
+          dataType: body.dataType ?? null,
+          data: body.data ?? null, // optional (base64)
+        },
       },
     });
-
     return NextResponse.json({ success: true, session });
   } catch (error) {
     console.error(error);
