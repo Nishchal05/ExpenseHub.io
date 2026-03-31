@@ -11,7 +11,7 @@ export async function POST(req: NextRequest) {
       data: {
         userId: body.userId,
     
-        sourceMessageId: body.unique_id ?? null,
+        sourceMessageId: body.sourceMessageId ?? null,
     
         fileType: body.data?.startsWith("data:")
           ? body.data.split(";")[0].replace("data:", "")
@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
         category: body.category ?? null,
     
         project: null,
-        customer: body.payingEntity ?? null,
+        customer: null,
         event: null,
         note: null,
     
@@ -43,10 +43,10 @@ export async function POST(req: NextRequest) {
         status: "queued",
     
         rawPayload: {
-          userName: body.userName ?? null,
-          messageType: body.messageType ?? null,
-          dataType: body.dataType ?? null,
-          data: body.data ?? null, // optional (base64)
+          userName: body.rawPayloaduserName ?? null,
+          messageType: body.rawPayload.messageType ?? null,
+          dataType: body.rawPayload.dataType ?? null,
+          data: body.rawPayload.data ?? null, // optional (base64)
         },
       },
     });
