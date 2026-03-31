@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
           userName: body.rawPayload.userName ?? null,
           messageType: body.rawPayload.messageType ?? null,
           dataType: body.rawPayload.dataType ?? null,
-          //data: body.rawPayload.data ?? null, // optional (base64)
+          data: body.rawPayload.data ?? null, // optional (base64)
         },
       },
     });

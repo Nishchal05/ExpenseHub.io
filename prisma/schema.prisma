@@ -16,7 +16,7 @@ model ExpenseSession {
 
   merchant        String?
   amount          Float?
-  expenseDate     DateTime?
+  expenseDate     String?
   type            String?
   category        String?
 
