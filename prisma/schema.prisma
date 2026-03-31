@@ -1,0 +1,44 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model ExpenseSession {
+  id              Int      @id @default(autoincrement())
+  userId          String
+  sourceMessageId String?
+  fileName        String?
+  fileType        String?
+  fileUrl         String?
+
+  merchant        String?
+  amount          Float?
+  expenseDate     DateTime?
+  type            String?
+  category        String?
+
+  project         String?
+  customer        String?
+  event           String?
+  note            String?
+
+  extraFields     Json     @default("{}")
+  pendingFields   Json     @default("[]")
+  currentStep     String   @default("queued")
+  currentFieldKey String?
+  status          String   @default("queued")
+
+  isActive        Boolean  @default(true)
+  clientSynced    Boolean  @default(false)
+
+  rawPayload      Json?
+  ocrText         String?
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([userId, createdAt])
+}
