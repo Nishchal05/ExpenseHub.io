@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
-// 🔹 CREATE SESSION (POST)
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
@@ -13,54 +12,66 @@ export async function POST(req: NextRequest) {
         ? rawPayload.data.split(';')[0].replace('data:', '')
         : rawPayload.dataType ?? null;
 
-    const session = await prisma.expenseSession.create({
-      data: {
-        userId: body.userId,
-
-        sourceMessageId: body.sourceMessageId ?? null,
-
-        fileType,
-        fileUrl: body.fileUrl ?? null,
-
-        merchant: body.merchant ?? null,
-        amount: body.amount ?? null,
-
-        expenseDate: body.expenseDate,
-
-        type: body.type ? String(body.type).toLowerCase() : null,
-        category: body.category ?? null,
-
-        project: body.project ?? null,
-        customer: body.customer ?? null,
-        event: body.event ?? null,
-        note: body.note ?? null,
-
-        extraFields: body.extraFields ?? {},
-
-        currentStep: body.currentStep ?? 'awaiting_category',
-        status: body.status ?? 'queued',
-        isActive: body.isActive ?? true,
-
-        rawPayload: {
-          userName: rawPayload.userName ?? null,
-          messageType: rawPayload.messageType ?? null,
-          dataType: rawPayload.dataType ?? null,
-          // Avoid storing huge base64 unless absolutely needed
-          // data: rawPayload.data ?? null,
-        },
+    const sessionData = {
+      userId: body.userId,
+      sourceMessageId: body.sourceMessageId ?? null,
+      fileType,
+      fileUrl: body.fileUrl ?? null,
+      merchant: body.merchant ?? null,
+      amount: body.amount ?? null,
+      expenseDate: body.expenseDate,
+      type: body.type ? String(body.type).toLowerCase() : null,
+      category: body.category ?? null,
+      project: body.project ?? null,
+      customer: body.customer ?? null,
+      event: body.event ?? null,
+      note: body.note ?? null,
+      extraFields: body.extraFields ?? {},
+      currentStep: body.currentStep ?? 'awaiting_category',
+      status: body.status ?? 'queued',
+      isActive: body.isActive ?? true,
+      rawPayload: {
+        userName: rawPayload.userName ?? null,
+        messageType: rawPayload.messageType ?? null,
+        dataType: rawPayload.dataType ?? null,
       },
+    };
+
+    // ✅ If sourceMessageId present → upsert (update existing or create new)
+    if (body.sourceMessageId) {
+      const existing = await prisma.expenseSession.findFirst({
+        where: {
+          userId: body.userId,
+          sourceMessageId: body.sourceMessageId,
+        },
+      });
+
+      if (existing) {
+        // 🔄 Update existing session
+        const session = await prisma.expenseSession.update({
+          where: { id: existing.id },
+          data: sessionData,
+        });
+
+        return NextResponse.json({ success: true, session, action: 'updated' });
+      }
+    }
+
+    // 🆕 Create new session (no sourceMessageId, or no existing match found)
+    const session = await prisma.expenseSession.create({
+      data: sessionData,
     });
 
-    return NextResponse.json({ success: true, session });
+    return NextResponse.json({ success: true, session, action: 'created' });
+
   } catch (error) {
-    console.error('Failed to create session:', error);
+    console.error('Failed to create/update session:', error);
     return NextResponse.json(
-      { success: false, error: 'Failed to create session' },
+      { success: false, error: 'Failed to create/update session' },
       { status: 500 }
     );
   }
 }
-
 // 🔹 GET SESSION(S)
 export async function GET(req: NextRequest) {
   try {
