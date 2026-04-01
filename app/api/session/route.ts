@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
         merchant: body.merchant ?? null,
         amount: body.amount ?? null,
 
-        expenseDate: body.expenseDate ? new Date(body.expenseDate) : null,
+        expenseDate: body.expenseDate,
 
         type: body.type ? String(body.type).toLowerCase() : null,
         category: body.category ?? null,
