@@ -123,3 +123,35 @@ export async function GET(req: NextRequest) {
     );
   }
 }
+export async function DELETE(req: NextRequest) {
+  try {
+    const { searchParams } = new URL(req.url);
+    const userId = searchParams.get("userId");
+
+    // ❗ Validate input
+    if (!userId) {
+      return NextResponse.json(
+        { success: false, message: "userId is required" },
+        { status: 400 }
+      );
+    }
+
+    const deletedSessions = await prisma.expenseSession.deleteMany({
+      where: { userId },
+    });
+
+    return NextResponse.json({
+      success: true,
+      message: "All expenses deleted successfully",
+      deletedCount: deletedSessions.count,
+    });
+
+  } catch (error) {
+    console.error("DELETE ERROR:", error);
+
+    return NextResponse.json(
+      { success: false, message: "Something went wrong" },
+      { status: 500 }
+    );
+  }
+}
