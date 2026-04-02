@@ -1,77 +1,143 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
+// Fields that exist directly in Prisma model and are safe to update directly
+const predefinedFields = new Set([
+  'fileName',
+  'fileType',
+  'fileUrl',
+  'merchant',
+  'amount',
+  'expenseDate',
+  'type',
+  'category',
+  'project',
+  'customer',
+  'event',
+  'note',
+  'currentStep',
+  'currentFieldKey',
+  'status',
+  'isActive',
+  'clientSynced',
+  'ocrText',
+  'rawPayload',
+  'pendingFields',
+  'extraFields',
+]);
+
+// Optional aliases if your workflow sends different names
+const keyAliases: Record<string, string> = {
+  anynote: 'note',
+  date: 'expenseDate',
+};
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
 
-    const rawPayload = body.rawPayload ?? {};
+    const { userId, sourceMessageId, ...updateFields } = body;
 
-    const fileType =
-      rawPayload.data?.startsWith('data:')
-        ? rawPayload.data.split(';')[0].replace('data:', '')
-        : rawPayload.dataType ?? null;
-
-    const sessionData = {
-      userId: body.userId,
-      sourceMessageId: body.sourceMessageId ?? null,
-      fileType,
-      fileUrl: body.fileUrl ?? null,
-      merchant: body.merchant ?? null,
-      amount: body.amount ?? null,
-      expenseDate: body.expenseDate,
-      type: body.type ? String(body.type).toLowerCase() : null,
-      category: body.category ?? null,
-      project: body.project ?? null,
-      customer: body.customer ?? null,
-      event: body.event ?? null,
-      note: body.note ?? null,
-      extraFields: body.extraFields ?? {},
-      currentStep: body.currentStep ?? 'awaiting_category',
-      status: body.status ?? 'queued',
-      isActive: body.isActive ?? true,
-      rawPayload: {
-        userName: rawPayload.userName ?? null,
-        messageType: rawPayload.messageType ?? null,
-        dataType: rawPayload.dataType ?? null,
-      },
-    };
-
-    // ✅ If sourceMessageId present → upsert (update existing or create new)
-    if (body.sourceMessageId) {
-      const existing = await prisma.expenseSession.findFirst({
-        where: {
-          userId: body.userId,
-          sourceMessageId: body.sourceMessageId,
+    if (!userId || !sourceMessageId) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'userId and sourceMessageId are required',
         },
-      });
+        { status: 400 }
+      );
+    }
 
-      if (existing) {
-        // 🔄 Update existing session
-        const session = await prisma.expenseSession.update({
-          where: { id: existing.id },
-          data: sessionData,
-        });
+    const existing = await prisma.expenseSession.findFirst({
+      where: {
+        userId,
+        sourceMessageId,
+      },
+    });
 
-        return NextResponse.json({ success: true, session, action: 'updated' });
+    if (!existing) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Session not found',
+        },
+        { status: 404 }
+      );
+    }
+
+    const directData: Record<string, any> = {};
+    const extraFieldsData: Record<string, any> =
+      existing.extraFields &&
+      typeof existing.extraFields === 'object' &&
+      !Array.isArray(existing.extraFields)
+        ? { ...(existing.extraFields as Record<string, any>) }
+        : {};
+
+    for (const [rawKey, rawValue] of Object.entries(updateFields)) {
+      const key = keyAliases[rawKey] || rawKey;
+      let value = rawValue;
+
+      // Optional normalization for type
+      if (key === 'type' && value != null) {
+        value = String(value).toLowerCase();
+      }
+
+      // Optional fileType extraction if rawPayload.data is base64 data URI
+      if (
+        key === 'rawPayload' &&
+        value &&
+        typeof value === 'object' &&
+        !Array.isArray(value)
+      ) {
+        const rawPayload = value as Record<string, any>;
+        const extractedFileType =
+          typeof rawPayload.data === 'string' && rawPayload.data.startsWith('data:')
+            ? rawPayload.data.split(';')[0].replace('data:', '')
+            : rawPayload.dataType ?? null;
+
+        if (!directData.fileType && extractedFileType) {
+          directData.fileType = extractedFileType;
+        }
+
+        directData.rawPayload = {
+          userName: rawPayload.userName ?? null,
+          messageType: rawPayload.messageType ?? null,
+          dataType: rawPayload.dataType ?? null,
+          data: rawPayload.data ?? null,
+        };
+
+        continue;
+      }
+
+      if (predefinedFields.has(key)) {
+        directData[key] = value;
+      } else {
+        extraFieldsData[key] = value;
       }
     }
 
-    // 🆕 Create new session (no sourceMessageId, or no existing match found)
-    const session = await prisma.expenseSession.create({
-      data: sessionData,
+    const session = await prisma.expenseSession.update({
+      where: { id: existing.id },
+      data: {
+        ...directData,
+        extraFields: extraFieldsData,
+      },
     });
 
-    return NextResponse.json({ success: true, session, action: 'created' });
-
+    return NextResponse.json({
+      success: true,
+      action: 'updated',
+      session,
+    });
   } catch (error) {
-    console.error('Failed to create/update session:', error);
+    console.error('Failed to update session:', error);
     return NextResponse.json(
-      { success: false, error: 'Failed to create/update session' },
+      { success: false, error: 'Failed to update session' },
       { status: 500 }
     );
   }
 }
+
 // 🔹 GET SESSION(S)
 export async function GET(req: NextRequest) {
   try {
@@ -80,7 +146,6 @@ export async function GET(req: NextRequest) {
     const userId = searchParams.get('userId');
     const id = searchParams.get('id');
 
-    // ✅ Case 1: Get single session by ID
     if (id) {
       const session = await prisma.expenseSession.findUnique({
         where: { id: Number(id) },
@@ -96,14 +161,10 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ success: true, session });
     }
 
-    // ✅ Case 2: Get ALL expense details for one user (latest -> oldest)
     if (userId) {
       const sessions = await prisma.expenseSession.findMany({
         where: { userId },
-        orderBy: [
-          { createdAt: 'desc' },
-          { id: 'desc' },
-        ],
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
       });
 
       return NextResponse.json({
@@ -113,12 +174,8 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    // ✅ Case 3: Get all sessions (latest -> oldest)
     const sessions = await prisma.expenseSession.findMany({
-      orderBy: [
-        { createdAt: 'desc' },
-        { id: 'desc' },
-      ],
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
     });
 
     return NextResponse.json({
@@ -134,15 +191,15 @@ export async function GET(req: NextRequest) {
     );
   }
 }
+
 export async function DELETE(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
-    const userId = searchParams.get("userId");
+    const userId = searchParams.get('userId');
 
-    // ❗ Validate input
     if (!userId) {
       return NextResponse.json(
-        { success: false, message: "userId is required" },
+        { success: false, message: 'userId is required' },
         { status: 400 }
       );
     }
@@ -153,15 +210,14 @@ export async function DELETE(req: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: "All expenses deleted successfully",
+      message: 'All expenses deleted successfully',
       deletedCount: deletedSessions.count,
     });
-
   } catch (error) {
-    console.error("DELETE ERROR:", error);
+    console.error('DELETE ERROR:', error);
 
     return NextResponse.json(
-      { success: false, message: "Something went wrong" },
+      { success: false, message: 'Something went wrong' },
       { status: 500 }
     );
   }
