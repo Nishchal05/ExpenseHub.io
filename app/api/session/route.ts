@@ -132,7 +132,6 @@ export async function POST(req: NextRequest) {
         sourceMessageId,
         ...directData,
         extraFields: extraFieldsData,
-        currentStep: 'queued',
         status: 'queued',
         isActive: true,
       },
