@@ -55,19 +55,9 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    if (!existing) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Session not found',
-        },
-        { status: 404 }
-      );
-    }
-
     const directData: Record<string, any> = {};
     const extraFieldsData: Record<string, any> =
-      existing.extraFields &&
+      existing?.extraFields &&
       typeof existing.extraFields === 'object' &&
       !Array.isArray(existing.extraFields)
         ? { ...(existing.extraFields as Record<string, any>) }
@@ -77,12 +67,12 @@ export async function POST(req: NextRequest) {
       const key = keyAliases[rawKey] || rawKey;
       let value = rawValue;
 
-      // Optional normalization for type
+      // Normalize type
       if (key === 'type' && value != null) {
         value = String(value).toLowerCase();
       }
 
-      // Optional fileType extraction if rawPayload.data is base64 data URI
+      // Handle rawPayload
       if (
         key === 'rawPayload' &&
         value &&
@@ -90,8 +80,10 @@ export async function POST(req: NextRequest) {
         !Array.isArray(value)
       ) {
         const rawPayload = value as Record<string, any>;
+
         const extractedFileType =
-          typeof rawPayload.data === 'string' && rawPayload.data.startsWith('data:')
+          typeof rawPayload.data === 'string' &&
+          rawPayload.data.startsWith('data:')
             ? rawPayload.data.split(';')[0].replace('data:', '')
             : rawPayload.dataType ?? null;
 
@@ -116,23 +108,46 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const session = await prisma.expenseSession.update({
-      where: { id: existing.id },
+    // 🔹 UPDATE
+    if (existing) {
+      const session = await prisma.expenseSession.update({
+        where: { id: existing.id },
+        data: {
+          ...directData,
+          extraFields: extraFieldsData,
+        },
+      });
+
+      return NextResponse.json({
+        success: true,
+        action: 'updated',
+        session,
+      });
+    }
+
+    // 🔹 CREATE (new session)
+    const session = await prisma.expenseSession.create({
       data: {
+        userId,
+        sourceMessageId,
         ...directData,
         extraFields: extraFieldsData,
+        currentStep: 'queued',
+        status: 'queued',
+        isActive: true,
       },
     });
 
     return NextResponse.json({
       success: true,
-      action: 'updated',
+      action: 'created',
       session,
     });
+
   } catch (error) {
-    console.error('Failed to update session:', error);
+    console.error('Failed to create/update session:', error);
     return NextResponse.json(
-      { success: false, error: 'Failed to update session' },
+      { success: false, error: 'Failed to create/update session' },
       { status: 500 }
     );
   }
