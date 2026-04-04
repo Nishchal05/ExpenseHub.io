@@ -6,7 +6,9 @@ import Featured from "./_component/Featured";
 import Discovered from "./_component/discovered";
 import Service from "./_component/Service";
 import Productfeature from "./_component/Productfeature";
-
+import About from "./_component/About";
+import Review from "./_component/Reviews";
+import Footer from "./_component/Footer";
 export default function Home() {
   return (
     <div className=" h-screen">
@@ -16,6 +18,9 @@ export default function Home() {
       <Discovered/>
       <Service/>
       <Productfeature/>
+      <About/>
+      <Review/>
+      <Footer/>
     </div>
   );
 }
