@@ -7,7 +7,7 @@ import logo from "@/public/logo.png";
 
 const NAV_LINKS = [
   { label: "Home", href: "/" },
-  { label: "Expense Reporting", href: "/reporting" },
+  { label: "Expense Reporting", href: "/features" },
   { label: "Mileage Tracking", href: "/mileage" },
   { label: "Blog", href: "/blog" },
   { label: "Resources", href: "/resources" },
