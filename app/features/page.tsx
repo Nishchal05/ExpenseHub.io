@@ -1,8 +1,10 @@
+import Featuresection from "../_component/featuresection"
 import HeroFeatures from "../_component/herofeature"
 export default function Features(){
     return(
-        <div className="h-screen">
+        <div>
              <HeroFeatures/>
+             <Featuresection/>
         </div>
        
     )

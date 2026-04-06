@@ -44,7 +44,7 @@ const integrationTags = ["XERO", "QuickBooks", "AI Policy", "WhatsApp", "ML Scan
 
 export default function HeroFeatures() {
   return (
-    <section className="relative w-full overflow-hidden bg-white py-36 px-4 sm:px-8 lg:px-12">
+    <section className="relative w-full overflow-hidden bg-white py-16 px-4 sm:px-8 lg:px-12">
 
       {/* Dot grid */}
       <div
