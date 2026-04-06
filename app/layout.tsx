@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Navbar from "./_component/Navbar";
 import Footer from "./_component/Footer";
+
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -27,9 +28,21 @@ export default function RootLayout({
     <html lang="en">
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      ><Navbar/>
-        {children}
-        <Footer/>
+      >
+        {/* Outer shell: full height, column flex so footer is always at bottom */}
+        <div className="flex min-h-screen flex-col">
+
+          {/* Navbar sits at top — if it's sticky/fixed, pt-[navbar-height] below compensates */}
+          <Navbar />
+
+          {/* Main content grows to fill remaining space.
+              pt-16 = 64px — adjust to match your Navbar's actual height (h-16, h-20, etc.) */}
+          <main className="flex-1 pt-16">
+            {children}
+          </main>
+
+          <Footer />
+        </div>
       </body>
     </html>
   );
