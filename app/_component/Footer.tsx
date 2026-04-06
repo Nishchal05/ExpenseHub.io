@@ -76,8 +76,6 @@ export default function Footer() {
 
   return (
     <footer className="relative w-full overflow-hidden bg-white">
-
-      {/* Dot grid */}
       <div
         className="pointer-events-none absolute inset-0 z-0"
         style={{
