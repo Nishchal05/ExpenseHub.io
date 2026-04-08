@@ -11,7 +11,7 @@ import Review from "./_component/Reviews";
 import Footer from "./_component/Footer";
 export default function Home() {
   return (
-    <div className=" min-h-screen">
+    <div>
       <Herosection/>
       <Demosection/>
       <Featured/>
